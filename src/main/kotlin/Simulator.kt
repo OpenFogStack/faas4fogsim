@@ -7,7 +7,7 @@ import kotlin.math.roundToInt
 import kotlin.text.StringBuilder
 
 
-class Simulator() {
+class Simulator(val config: Configuration) {
 
     val cloud = mutableSetOf<ComputeNode>()
     val intermediary = mutableSetOf<ComputeNode>()
@@ -21,32 +21,26 @@ class Simulator() {
      */
     fun defineTopology() {
         //TODO edit here and insert network topology for simulation. EXAMPLE:
-
-
-        var cNode = buildCloudNode()
-        var iNode = buildIntermediaryNode("intermediary")
-        var eNode = buildEdgeNode("edge")
+        val cNode = buildCloudNode()
+        val iNode = buildIntermediaryNode("intermediary")
+        val eNode = buildEdgeNode("edge")
         iNode.connectIntermediaryToCloud(cNode)
         eNode.connectEdgeToIntermediary(iNode)
-
-
     }
 
     /**
      * defines the set of executables for functions that shall be deployed on the topology
      */
     fun defineExecutables() {
-        //define executables and their parameter settings here manually or use Config
+        //define executables and their parameter settings here manually or use config
         //for (x in 1..5) defineExecutable(1, "executable$x", x.toDouble(), 2)
 
-        for (x in 1..Config.numberOfExecutables) defineExecutable(
-            Config.averageExecutableSize.withVariance(),
+        for (x in 1..config.numberOfExecutables) defineExecutable(
+            config.withVariance(config.averageExecutableSize),
             "executable$x",
-            Config.averageStoragePrice.withVariance(),
-            Config.avgExecLatency
+            config.withVariance(config.averageStoragePrice),
+            config.avgExecLatency
         )
-
-
     }
 
     /**
@@ -61,10 +55,10 @@ class Simulator() {
         val reqs = mutableListOf<Triple<Int, ComputeNode, ExecRequest>>()
         for (node in edge) {
             //var counter = 0
-            for (reqNo in 1..Config.requestsPerEdgeNode) {
-                val timestamp = Config.random.nextInt(Config.simulationDuration)
-                val executable = executables.values.elementAt(Config.random.nextInt(Config.numberOfExecutables))
-                val price = Config.avgExecutionPrice.withVariance()
+            for (reqNo in 1..config.requestsPerEdgeNode) {
+                val timestamp = config.random.nextInt(config.simulationDuration)
+                val executable = executables.values.elementAt(config.random.nextInt(config.numberOfExecutables))
+                val price = config.withVariance(config.avgExecutionPrice)
                 reqs.add(Triple(timestamp, node, ExecRequest(executable, price, timestamp)))
                 //  counter++
             }
@@ -75,36 +69,13 @@ class Simulator() {
 
     }
 
-
     fun offerRequests() {
-
         for ((timestamp, nodeToReqMap) in requests.toSortedMap()) {
             for ((node, reqList) in nodeToReqMap) {
                 node.offerRequests(timestamp, reqList)
             }
         }
     }
-
-    /**
-     * writes all results to the file system
-     */
-    fun persistResults() {
-        val writer = File("${Config.outFileName}.csv").printWriter()
-        writer.println(Config.toString() + "\n\n")
-        writer.println(cloud.first()?.getStatsStringHeader())
-        cloud.union(intermediary).union(edge).forEach { writer.println(it.getStatsString()) }
-        writer.println("\n\n\n")
-        writer.println(ExecRequest(executables.values.first(), 1.0, -1).getCSVHeader())
-        requests.forEach { timestamp, nodeToRequestsMap ->
-            nodeToRequestsMap.forEach {
-                it.value.forEach {
-                    writer.println(it.getCSVString())
-                }
-            }
-        }
-        writer.close()
-    }
-
 
     private fun addRequestToSimulation(request: ExecRequest, timestamp: Int, node: ComputeNode) {
         var nodeToReqList = requests[timestamp]
@@ -126,19 +97,18 @@ class Simulator() {
         executables[exec.name] = exec
     }
 
-
     private fun buildCloudNode(): ComputeNode = buildNode(NodeType.CLOUD, Int.MAX_VALUE, Int.MAX_VALUE, "Cloud")
     private fun buildIntermediaryNode(name: String): ComputeNode = buildNode(
         NodeType.INTERMEDIARY,
-        Config.storageCapacityIntermediary,
-        Config.parallelRequestCapacityIntermediary,
+        config.storageCapacityIntermediary,
+        config.parallelRequestCapacityIntermediary,
         name
     )
 
     private fun buildEdgeNode(name: String): ComputeNode = buildNode(
         NodeType.EDGE,
-        Config.storageCapacityEdge,
-        Config.parallelRequestCapacityEdge,
+        config.storageCapacityEdge,
+        config.parallelRequestCapacityEdge,
         name
     )
 
@@ -153,7 +123,7 @@ class Simulator() {
             storageCapacity,
             parallelRequestCapacity,
             name,
-            Config.simulationDuration
+            config
         )
         when (nodeType) {
             NodeType.EDGE -> edge.add(node)
@@ -164,10 +134,10 @@ class Simulator() {
     }
 
     fun ComputeNode.connectEdgeToIntermediary(intermediary: ComputeNode) =
-        this.connectTo(intermediary, Config.avgEdge2IntermediaryLatency)
+        this.connectTo(intermediary, config.avgEdge2IntermediaryLatency)
 
     fun ComputeNode.connectIntermediaryToCloud(cloud: ComputeNode) =
-        this.connectTo(cloud, Config.avgIntermediary2CloudLatency)
+        this.connectTo(cloud, config.avgIntermediary2CloudLatency)
 
     fun runSimulation(): SimulationResult {
         defineTopology()
@@ -178,14 +148,23 @@ class Simulator() {
         defineRequests()
         println("Defined ${requests.flatMap { it.value.flatMap { it.value } }.count()} requests")
         offerRequests()
-        if (Config.logDetails) persistResults()
 
         val nodeResults = mutableListOf<NodeResult>()
         for (node in edge.union(intermediary.union(cloud))) {
             val (processed, delegated) = node.getRequestStats()
             val (procEarning, storeEarning) = node.getEarningStats()
             val noOfExec = node.executables.size
-            nodeResults.add(NodeResult(node.name, node.nodeType, procEarning, storeEarning, processed, delegated,noOfExec))
+            nodeResults.add(
+                NodeResult(
+                    node.name,
+                    node.nodeType,
+                    procEarning,
+                    storeEarning,
+                    processed,
+                    delegated,
+                    noOfExec
+                )
+            )
         }
         var min = Integer.MAX_VALUE
         var max = Integer.MIN_VALUE
@@ -197,7 +176,7 @@ class Simulator() {
             if (it.totalLatency < min) min = it.totalLatency
             if (it.totalLatency > max) max = it.totalLatency
         }
-        return SimulationResult(Config.toString(), nodeResults, min, max, sum.div(counter.toDouble()))
+        return SimulationResult(config.toString(), nodeResults, min, max, sum.div(counter.toDouble()))
     }
 
 }
@@ -210,7 +189,7 @@ data class SimulationResult(
     val avgLatency: Double
 ) {
     fun toCsvString(): String {
-        val result = StringBuilder("Config:\n").append(Config).append("\nRequest Latency:\nmin;avg;max\n")
+        val result = StringBuilder("config:\n").append(configAsCSV).append("\nRequest Latency:\nmin;avg;max\n")
             .append("$minLatency;${avgLatency.asDecimal()};$maxLatency\n").append(getNodeResultHeader())
         for (res in nodeResults) {
             result.append("\n${res.toCsvString()}")
@@ -218,7 +197,8 @@ data class SimulationResult(
         return result.toString()
     }
 
-    fun getNodeResultHeader() = "name;type;processing_earnings;storage_earnings;processed_reqs;delegated_reqs;no_executables"
+    fun getNodeResultHeader() =
+        "name;type;processing_earnings;storage_earnings;processed_reqs;delegated_reqs;no_executables"
 }
 
 data class NodeResult(

@@ -9,8 +9,7 @@ data class ComputeNode(
     val storageCapacity: Int,
     val parallelRequestCapacity: Int,
     val name: String,
-
-    val simDuration: Int
+    val config: Configuration
 ) {
     var uplinkLatency: Int = 0
     var parentNode: ComputeNode? = null
@@ -18,7 +17,7 @@ data class ComputeNode(
     val executables: MutableSet<Executable> = mutableSetOf()
     private var usedStorageCapacity: Int = 0
 
-    private val utilization: IntArray = IntArray(simDuration) { 0 }
+    private val utilization: IntArray = IntArray(config.simulationDuration) { 0 }
     private var earnings: Double = 0.0
 
     private var requestsProcessed = 0
@@ -32,7 +31,7 @@ data class ComputeNode(
 
         //find lowest paying entries and drop them until the new executable fits in
         while (usedStorageCapacity + newOne.size > storageCapacity) {
-            val exec = executables.minBy { it.storePrice }
+            val exec = executables.minByOrNull { it.storePrice }
                 ?: throw RuntimeException("Insufficient capacity but min price element was null: $this")
             usedStorageCapacity -= exec.size
             executables.remove(exec)
@@ -64,7 +63,7 @@ data class ComputeNode(
         if (isCloud || (executableExists && hasCpuCapacityLeft)) processRequest(timestamp, request)
         else {
            // println("pushing up from $name to ${parentNode?.name}: $request")
-            val uplinkDelay = uplinkLatency.withVariance()
+            val uplinkDelay = config.withVariance(uplinkLatency)
             request.pushTowardsCloud(uplinkDelay)
             requestsPushedUp++
             parentNode?.offerRequest(timestamp + uplinkDelay, request)
@@ -76,7 +75,7 @@ data class ComputeNode(
      * checks whether there is compute capacity left in the specified time interval
      */
     private fun checkUtilization(timestamp: Int, duration: Int): Boolean {
-        if (timestamp + duration >= simDuration) return false
+        if (timestamp + duration >= config.simulationDuration) return false
         return utilization[timestamp] < parallelRequestCapacity
     }
 
@@ -84,8 +83,8 @@ data class ComputeNode(
      * processes request, i.e., updates utilization stats and creates log entries
      */
     private fun processRequest(timestamp: Int, request: ExecRequest) {
-        val latency = request.executable.execLatency.withVariance()
-        val end = min(timestamp + latency, Config.simulationDuration)
+        val latency = config.withVariance(request.executable.execLatency)
+        val end = min(timestamp + latency, config.simulationDuration)
         for (x in timestamp until end) utilization[x]++
         request.execute(name, nodeType,latency)
         earnings += request.execPrice
@@ -95,9 +94,9 @@ data class ComputeNode(
 
 
     fun getStatsString(): String {
-        return "$name;$nodeType;${parentNode?.name};${(usedStorageCapacity.toDouble() / storageCapacity).asPercent()};${utilization.min()?.div(
+        return "$name;$nodeType;${parentNode?.name};${(usedStorageCapacity.toDouble() / storageCapacity).asPercent()};${utilization.minOrNull()?.div(
             parallelRequestCapacity
-        )?.asPercent()};${utilization.average().div(parallelRequestCapacity).asPercent()};${utilization.max()?.div(
+        )?.asPercent()};${utilization.average().div(parallelRequestCapacity).asPercent()};${utilization.maxOrNull()?.div(
             parallelRequestCapacity
         )?.asPercent()};${executables.sumByDouble { it.storePrice }.asDecimal()};${earnings.asDecimal()};$requestsProcessed;$requestsPushedUp"
     }

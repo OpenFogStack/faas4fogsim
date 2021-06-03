@@ -47,15 +47,6 @@ fun Number.asPercent() = DecimalFormat("0.0000%").format(this)
 fun Number.asDecimal() = DecimalFormat("0.0000").format(this)
 
 
-fun Int.withVariance(): Int {
-    val temp = (Config.random.nextDouble() * Config.maxDevInPercent * this / 100.0).roundToInt()
-    return if (Config.random.nextBoolean()) this + temp else this - temp
-}
-
-fun Double.withVariance(): Double {
-    val temp = Config.random.nextDouble() * this * Config.maxDevInPercent / 100.0
-    return if (Config.random.nextBoolean()) this + temp else this - temp
-}
 
 
 
