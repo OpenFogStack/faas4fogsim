@@ -27,7 +27,7 @@ David Bermbach, Setareh Maghsudi, Jonathan Hasenburg, Tobias Pfandzelter. **Towa
 
 ## Using the simulation
 
-- Import the project in IntelliJ and build it with Java and Kotlin
+- Import the project in IntelliJ as Gradle Project
 - Run MainKt and provide as argument:
     - `sim1`: study the effect of an increasing request load on the processing prices
     - `sim2`: study the effect of an increasing number of executables on storage prices

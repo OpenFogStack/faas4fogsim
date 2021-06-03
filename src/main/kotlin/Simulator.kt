@@ -1,11 +1,15 @@
 package de.tuberlin.mcc.faas4fogsim
 
+import org.apache.logging.log4j.LogManager
 import java.io.File
 
 import java.util.Random
 import kotlin.math.roundToInt
+import kotlin.reflect.KProperty1
+import kotlin.system.exitProcess
 import kotlin.text.StringBuilder
 
+private val logger = LogManager.getLogger()
 
 class Simulator(val config: Configuration) {
 
@@ -52,6 +56,7 @@ class Simulator(val config: Configuration) {
 //            defineRequest(exec, 1.0, 0, edge.first())
 //        }
 
+        // timestamp, computenode, execrequest
         val reqs = mutableListOf<Triple<Int, ComputeNode, ExecRequest>>()
         for (node in edge) {
             //var counter = 0
@@ -176,41 +181,9 @@ class Simulator(val config: Configuration) {
             if (it.totalLatency < min) min = it.totalLatency
             if (it.totalLatency > max) max = it.totalLatency
         }
-        return SimulationResult(config.toString(), nodeResults, min, max, sum.div(counter.toDouble()))
+        val requestResult = RequestResult(min, sum.div(counter.toDouble()), max)
+        return SimulationResult(config, nodeResults, requestResult)
     }
 
 }
 
-data class SimulationResult(
-    val configAsCSV: String,
-    val nodeResults: Collection<NodeResult>,
-    val minLatency: Int,
-    val maxLatency: Int,
-    val avgLatency: Double
-) {
-    fun toCsvString(): String {
-        val result = StringBuilder("config:\n").append(configAsCSV).append("\nRequest Latency:\nmin;avg;max\n")
-            .append("$minLatency;${avgLatency.asDecimal()};$maxLatency\n").append(getNodeResultHeader())
-        for (res in nodeResults) {
-            result.append("\n${res.toCsvString()}")
-        }
-        return result.toString()
-    }
-
-    fun getNodeResultHeader() =
-        "name;type;processing_earnings;storage_earnings;processed_reqs;delegated_reqs;no_executables"
-}
-
-data class NodeResult(
-    val nodeName: String,
-    val nodeType: NodeType,
-    val processingEarnings: Double,
-    val storageEarnings: Double,
-    val processedRequests: Int,
-    val delegatedRequests: Int,
-    val numberOfStoredExecutables: Int
-) {
-    fun toCsvString() =
-        "$nodeName;$nodeType;${processingEarnings.asDecimal()};${storageEarnings.asDecimal()};$processedRequests;$delegatedRequests;$numberOfStoredExecutables"
-
-}
