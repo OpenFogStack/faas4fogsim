@@ -15,7 +15,7 @@ data class ComputeNode(
     var parentNode: ComputeNode? = null
 
     val executables: MutableSet<Executable> = mutableSetOf()
-    private var usedStorageCapacity: Int = 0
+    private var usedStorageCapacity: Double = 0.0
 
     private val utilization: IntArray = IntArray(config.simulationDuration) { 0 }
     private var earnings: Double = 0.0
@@ -90,15 +90,6 @@ data class ComputeNode(
         earnings += request.execPrice
         requestsProcessed++
         //println("Processing request for price ${request.execPrice} on node $name ($nodeType) at t=$timestamp")
-    }
-
-
-    fun getStatsString(): String {
-        return "$name;$nodeType;${parentNode?.name};${(usedStorageCapacity.toDouble() / storageCapacity).asPercent()};${utilization.minOrNull()?.div(
-            parallelRequestCapacity
-        )?.asPercent()};${utilization.average().div(parallelRequestCapacity).asPercent()};${utilization.maxOrNull()?.div(
-            parallelRequestCapacity
-        )?.asPercent()};${executables.sumByDouble { it.storePrice }.asDecimal()};${earnings.asDecimal()};$requestsProcessed;$requestsPushedUp"
     }
 
     fun getRequestStats() = Pair(requestsProcessed,requestsPushedUp)

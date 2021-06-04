@@ -4,32 +4,36 @@ import java.io.File
 import java.util.*
 import kotlin.math.roundToInt
 
+/**
+ * timeU = ms
+ * spaceU = size of an average functions
+ * moneyU = random currency
+ */
 data class Configuration(
     val experimentName: String,
 
     val randomSeed: Long = 0L,
     val maxDevInPercent: Int = 50, // must be in [0;100]
-    val simulationDuration: Int = 120000,
+    val simulationDuration: Int = 2 * 60 * 1000, // timeU
 
     // node parameters
-    val storageCapacityEdge: Int = 100,
-    val storageCapacityIntermediary: Int = 500,
-    val parallelRequestCapacityEdge: Int = 10000,
-    val parallelRequestCapacityIntermediary: Int = 10000,
-    val avgExecLatency: Int = 30,
+    val storageCapacityEdge: Int = 10, // spaceU
+    val storageCapacityIntermediary: Int = 50, // spaceU
+    val parallelRequestCapacityEdge: Int = 5, // requests
+    val parallelRequestCapacityIntermediary: Int = 20, // requests
+    val avgExecLatency: Int = 30, // timeU
 
     // connection parameters
-    val avgEdge2IntermediaryLatency: Int = 20,
-    val avgIntermediary2CloudLatency: Int = 40,
+    val avgEdge2IntermediaryLatency: Int = 20, // timeU
+    val avgIntermediary2CloudLatency: Int = 40, // timeU
 
     // executable parameters
-    val numberOfExecutables: Int = 5,
-    val averageStoragePrice: Double = 100.0,
-    val averageExecutableSize: Int = 10,
+    val numberOfExecutables: Int = 10, // executables
+    val averageStoragePrice: Double = 100.0, // moneyU / executable for complete simulation duration
 
     // request parameters
-    val requestsPerEdgePerSecond: Int = 10000,
-    val avgExecutionPrice: Double = 1.0,
+    val individualEdgeLoad: Int = 1000, // requests / 1000 timeU
+    val avgExecutionPrice: Double = 100.0, // moneyU / request for complete execution time
 
     // output files
     val outputDir: String = ".",
@@ -38,7 +42,7 @@ data class Configuration(
     val suffixConfigInfo: String = "-config"
 ) {
     val random = Random(randomSeed)
-    val requestsPerEdgeNode = (requestsPerEdgePerSecond * simulationDuration / 1000.0).roundToInt()
+    val requestsPerEdgeNode = (individualEdgeLoad * simulationDuration / 1000.0).roundToInt()
 
     val nodesFile = File("$outputDir/$experimentName$suffixNodeResult.csv")
     val requestsFile = File("$outputDir/$experimentName$suffixRequestResult.csv")

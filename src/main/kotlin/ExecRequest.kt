@@ -30,17 +30,10 @@ data class ExecRequest(val executable: Executable, val execPrice: Double, val pl
         totalLatency += latency
         actualStart += latency
     }
-
-    fun getCSVString() =
-        "$plannedStart;$actualStart;${executable.name};${executionNode};${executionNodeType};${execPrice.asDecimal()};${totalLatency}"
-
-
-    fun getCSVHeader() = "planned_Start;actual_start;executable;executing_node;node_type;price;total_latency"
-
 }
 
 
-data class Executable(val size: Int, val name: String, val storePrice: Double, val execLatency: Int)
+data class Executable(val size: Double, val name: String, val storePrice: Double, val execLatency: Int)
 
 
 fun Number.asPercent() = DecimalFormat("0.0000%").format(this)

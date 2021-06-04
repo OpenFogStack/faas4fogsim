@@ -40,7 +40,7 @@ class Simulator(val config: Configuration) {
         //for (x in 1..5) defineExecutable(1, "executable$x", x.toDouble(), 2)
 
         for (x in 1..config.numberOfExecutables) defineExecutable(
-            config.withVariance(config.averageExecutableSize),
+            config.withVariance(1.0), // an executable has an average size of 1.0
             "executable$x",
             config.withVariance(config.averageStoragePrice),
             config.avgExecLatency
@@ -96,7 +96,7 @@ class Simulator(val config: Configuration) {
         reqList.add(request)
     }
 
-    private fun defineExecutable(size: Int, name: String, storePrice: Double, execLatency: Int) {
+    private fun defineExecutable(size: Double, name: String, storePrice: Double, execLatency: Int) {
         val exec = Executable(size, name, storePrice, execLatency)
         cloud.union(intermediary).union(edge).forEach { it.offerExecutable(exec) }
         executables[exec.name] = exec
@@ -145,13 +145,13 @@ class Simulator(val config: Configuration) {
         this.connectTo(cloud, config.avgIntermediary2CloudLatency)
 
     fun runSimulation(): SimulationResult {
+        logger.info("Simulation configuration: $config")
         defineTopology()
-        println("Added the following nodes:")
-        edge.union(intermediary).union(cloud).forEach { println(it) }
+        edge.union(intermediary).union(cloud).forEach { logger.debug(it) }
         defineExecutables()
-        println("Added ${executables.size} executables")
+        logger.info("Added ${executables.size} executables")
         defineRequests()
-        println("Defined ${requests.flatMap { it.value.flatMap { it.value } }.count()} requests")
+        logger.info("Calculated timestamps for ${requests.flatMap { it.value.flatMap { it.value } }.count()} requests")
         offerRequests()
 
         val nodeResults = mutableListOf<NodeResult>()
@@ -182,6 +182,7 @@ class Simulator(val config: Configuration) {
             if (it.totalLatency > max) max = it.totalLatency
         }
         val requestResult = RequestResult(min, sum.div(counter.toDouble()), max)
+        logger.info("Simulation completed")
         return SimulationResult(config, nodeResults, requestResult)
     }
 
