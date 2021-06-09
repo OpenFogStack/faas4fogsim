@@ -21,6 +21,7 @@ data class ComputeNode(
     val utilization: IntArray = IntArray(config.simulationDuration) { 0 }
     private var earnings: Double = 0.0
 
+    // number of requests for which the processing has been started (not necessarily completed when simulation ends)
     private var requestsProcessed = 0
     private var requestsPushedUp = 0
 
@@ -59,15 +60,12 @@ data class ComputeNode(
     private fun offerRequest(timestamp: Int, request: ExecRequest): Pair<ComputeNode, List<ExecRequest>>? {
         val pushedUp = mutableListOf<ExecRequest>()
 
-        val isCloud = nodeType == NodeType.CLOUD
-        val hasCpuCapacityLeft = checkUtilization(
-            timestamp,
-            request.executable.execLatency
-        )
+        val hasCpuCapacityLeft = checkUtilization(timestamp)
         val executableExists = executables.contains(request.executable)
 
-        if (isCloud || (executableExists && hasCpuCapacityLeft)) processRequest(timestamp, request)
-        else {
+        if (executableExists && hasCpuCapacityLeft) {
+            processRequest(timestamp, request)
+        } else {
            // println("pushing up from $name to ${parentNode?.name}: $request")
             val uplinkDelay = config.withVariance(uplinkLatency)
             request.pushTowardsCloud(uplinkDelay)
@@ -88,8 +86,7 @@ data class ComputeNode(
     /**
      * checks whether there is compute capacity left in the specified time interval
      */
-    private fun checkUtilization(timestamp: Int, duration: Int): Boolean {
-        if (timestamp + duration >= config.simulationDuration) return false
+    private fun checkUtilization(timestamp: Int): Boolean {
         return utilization[timestamp] < parallelRequestCapacity
     }
 
@@ -108,7 +105,7 @@ data class ComputeNode(
 
     fun getRequestStats() = Pair(requestsProcessed,requestsPushedUp)
     fun getEarningStats() = Pair(earnings,executables.sumByDouble { it.storePrice })
-    
+
     fun avgConcurrentRequests(): Double {
         return utilization.average()
     }

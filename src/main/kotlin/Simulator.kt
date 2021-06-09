@@ -1,7 +1,7 @@
 package de.tuberlin.mcc.faas4fogsim
 
 import org.apache.logging.log4j.LogManager
-import java.io.File
+import kotlin.contracts.contract
 
 private val logger = LogManager.getLogger()
 
@@ -69,7 +69,9 @@ class Simulator(val config: Configuration) {
     }
 
     fun offerRequests() {
-        for ((timestamp, nodeToReqMap) in requests.toSortedMap()) {
+        for (timestamp in 0..config.simulationDuration - 1) {
+            val nodeToReqMap = requests.get(timestamp) ?: continue
+
             for ((node, reqList) in nodeToReqMap) {
                 val pushedUp = node.offerRequests(timestamp, reqList)
                 // stored pushed up requests in requests-data-structure
@@ -179,12 +181,14 @@ class Simulator(val config: Configuration) {
         var max = Integer.MIN_VALUE
         var sum = 0
         var counter = 0
-        requests.flatMap { it.value.flatMap { it.value } }.forEach {
-            counter++
-            sum += it.totalLatency
-            if (it.totalLatency < min) min = it.totalLatency
-            if (it.totalLatency > max) max = it.totalLatency
-        }
+        requests.flatMap { it.value.flatMap { it.value } }
+            .filter { it.executionCompleted } // only count requests that have been completly executed
+            .forEach {
+                counter++
+                sum += it.totalLatency
+                if (it.totalLatency < min) min = it.totalLatency
+                if (it.totalLatency > max) max = it.totalLatency
+            }
         val requestResult = RequestResult(min, sum.div(counter.toDouble()), max)
         logger.info("Simulation completed")
         return SimulationResult(config, nodeResults, requestResult)

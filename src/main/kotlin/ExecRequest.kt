@@ -1,13 +1,13 @@
 package de.tuberlin.mcc.faas4fogsim
 
 import java.text.DecimalFormat
-import kotlin.math.roundToInt
 
 data class ExecRequest(val executable: Executable, val execPrice: Double, val plannedStart: Int) {
     var totalLatency: Int = 0
     var executionNode: String = "not executed"
     var executionNodeType: NodeType? = null
     var actualStart = plannedStart
+    var executionCompleted = false
 
     /**
      * invoke when executing this request
@@ -18,6 +18,7 @@ data class ExecRequest(val executable: Executable, val execPrice: Double, val pl
         totalLatency += latency
         executionNode = node
         executionNodeType = nodeType
+        executionCompleted = true
         //println("Executed ${executable.name} on node $node ($nodeType): price=$execPrice, totalLatency = $totalLatency, execLatency=${executable.execLatency}")
     }
 
