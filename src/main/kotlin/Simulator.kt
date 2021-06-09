@@ -3,12 +3,6 @@ package de.tuberlin.mcc.faas4fogsim
 import org.apache.logging.log4j.LogManager
 import java.io.File
 
-import java.util.Random
-import kotlin.math.roundToInt
-import kotlin.reflect.KProperty1
-import kotlin.system.exitProcess
-import kotlin.text.StringBuilder
-
 private val logger = LogManager.getLogger()
 
 class Simulator(val config: Configuration) {
@@ -77,7 +71,15 @@ class Simulator(val config: Configuration) {
     fun offerRequests() {
         for ((timestamp, nodeToReqMap) in requests.toSortedMap()) {
             for ((node, reqList) in nodeToReqMap) {
-                node.offerRequests(timestamp, reqList)
+                val pushedUp = node.offerRequests(timestamp, reqList)
+                // stored pushed up requests in requests-data-structure
+                for ((pushTarget, requestList) in pushedUp) {
+                    for (request in requestList) {
+                        val innerMap = requests.getOrPut(request.actualStart) { mutableMapOf() }
+                        val listForNode = innerMap.getOrPut(pushTarget) { mutableListOf() }
+                        listForNode.add(request)
+                    }
+                }
             }
         }
     }
