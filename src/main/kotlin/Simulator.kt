@@ -158,6 +158,7 @@ class Simulator(val config: Configuration) {
         for (node in edge.union(intermediary.union(cloud))) {
             val (processed, delegated) = node.getRequestStats()
             val (procEarning, storeEarning) = node.getEarningStats()
+            val avgConcurrentRequests = node.avgConcurrentRequests()
             val noOfExec = node.executables.size
             nodeResults.add(
                 NodeResult(
@@ -167,7 +168,8 @@ class Simulator(val config: Configuration) {
                     storeEarning,
                     processed,
                     delegated,
-                    noOfExec
+                    noOfExec,
+                    avgConcurrentRequests
                 )
             )
         }

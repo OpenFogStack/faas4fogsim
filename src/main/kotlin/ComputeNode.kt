@@ -96,8 +96,9 @@ data class ComputeNode(
     fun getEarningStats() = Pair(earnings,executables.sumByDouble { it.storePrice })
 
 
-    fun getStatsStringHeader(): String =
-        "name;node_type;parent;storage_util;min_cpu_util;avg_cpu_util;max_cpu_util;storage_earnings;processing_earnings;requests_processed;requests_pushed_up"
+    fun avgConcurrentRequests(): Double {
+        return utilization.average()
+    }
 
     fun connectTo(other: ComputeNode, uplinkLatency:Int) {
         parentNode = other

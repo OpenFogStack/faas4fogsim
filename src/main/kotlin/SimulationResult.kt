@@ -70,15 +70,16 @@ data class NodeResult(
     val storageEarnings: Double,
     val processedRequests: Int,
     val delegatedRequests: Int,
-    val numberOfStoredExecutables: Int
+    val numberOfStoredExecutables: Int,
+    val avgConcurrentRequests: Double
 ) {
     companion object {
         const val csvHeader =
-            "name;type;processing_earnings;storage_earnings;processed_reqs;delegated_reqs;stored_executables";
+            "name;type;processing_earnings;storage_earnings;processed_reqs;delegated_reqs;stored_executables;avg_concurrent_requests";
     }
 
     val csv =
-        "$nodeName;$nodeType;${processingEarnings.asDecimal()};${storageEarnings.asDecimal()};$processedRequests;$delegatedRequests;$numberOfStoredExecutables"
+        "$nodeName;$nodeType;${processingEarnings.asDecimal()};${storageEarnings.asDecimal()};$processedRequests;$delegatedRequests;$numberOfStoredExecutables;$avgConcurrentRequests"
 
 }
 
