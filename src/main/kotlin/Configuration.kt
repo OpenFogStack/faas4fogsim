@@ -14,6 +14,7 @@ data class Configuration(
 
     val randomSeed: Long = 0L,
     val maxDevInPercent: Int = 50, // must be in [0;100]
+    val maxPriceDevInPercent: Int = maxDevInPercent, // we can also just deviate the storage/processing prices
     val simulationDuration: Int = 2 * 60 * 1000, // timeU
 
     // node parameters
@@ -22,6 +23,7 @@ data class Configuration(
     val parallelRequestCapacityEdge: Int = 5, // requests
     val parallelRequestCapacityIntermediary: Int = 20, // requests
     val avgExecLatency: Int = 30, // timeU
+    val nodeDisloyalProbability: Int = 100, // chance for a node to replace the cheapest executable if a better one is found
 
     // connection parameters
     val avgEdge2IntermediaryLatency: Int = 20, // timeU
@@ -42,6 +44,8 @@ data class Configuration(
     val suffixConfigInfo: String = "-config"
 ) {
     val random = Random(randomSeed)
+    val disloyalRandom = Random(randomSeed) // unique random since loyalty is not always checked
+
     val requestsPerEdgeNode = (individualEdgeLoad * simulationDuration / 1000.0).roundToInt()
 
     val nodesFile = File("$outputDir/$experimentName$suffixNodeResult.csv")
@@ -55,6 +59,11 @@ data class Configuration(
 
     fun withVariance(value: Double): Double {
         val temp = random.nextDouble() * value * maxDevInPercent / 100.0
+        return if (random.nextBoolean()) value + temp else value - temp
+    }
+
+    fun withVariancePrice(value: Double): Double {
+        val temp = random.nextDouble() * value * maxPriceDevInPercent / 100.0
         return if (random.nextBoolean()) value + temp else value - temp
     }
 

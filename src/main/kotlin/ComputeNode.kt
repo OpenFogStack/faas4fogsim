@@ -35,13 +35,25 @@ data class ComputeNode(
         while (usedStorageCapacity + newOne.size > storageCapacity) {
             val exec = executables.minByOrNull { it.storePrice }
                 ?: throw RuntimeException("Insufficient capacity but min price element was null: $this")
-            usedStorageCapacity -= exec.size
-            executables.remove(exec)
-           // println("$nodeType node $name dropped executable ${exec.name}. Capacity: $usedStorageCapacity out of $storageCapacity")
+
+            if (nodeType == NodeType.CLOUD) {
+                // we remove the cheaper one if we are a cloud node
+                usedStorageCapacity -= exec.size
+                executables.remove(exec)
+                // println("$nodeType node $name dropped executable ${exec.name}. Capacity: $usedStorageCapacity out of $storageCapacity")
+            } else {
+                // there is a chance that we do not take the better one
+                if (config.disloyalRandom.nextInt(100) >= config.nodeDisloyalProbability) {
+                    // we stay loyal!
+                    return
+                } else {
+                    usedStorageCapacity -= exec.size
+                    executables.remove(exec)
+                }
+            }
         }
         executables.add(newOne)
         usedStorageCapacity += newOne.size
-       // println("$nodeType node $name stored executable ${newOne.name}. Capacity: $usedStorageCapacity out of $storageCapacity")
     }
 
     fun offerRequests(timestamp: Int, requests: Collection<ExecRequest>): List<Pair<ComputeNode, List<ExecRequest>>> {
@@ -77,7 +89,7 @@ data class ComputeNode(
             Pair(parentNode!!, pushedUp)
         } else {
             if (pushedUp.isNotEmpty()) {
-                logger.warn("Must push request to a parent, but none exist -> will not be executed")
+                logger.warn("${name}: Must push request to a parent, but none exist -> will not be executed; ${toString()}")
             }
             null
         }

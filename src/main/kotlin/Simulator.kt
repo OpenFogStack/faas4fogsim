@@ -17,13 +17,27 @@ class Simulator(val config: Configuration) {
     /**
      * defines the network topology of cloud, intermediary and edge nodes
      */
-    fun defineTopology() {
+    fun defineTopology(simple: Boolean = true) {
         //TODO edit here and insert network topology for simulation. EXAMPLE:
-        val cNode = buildCloudNode()
-        val iNode = buildIntermediaryNode("intermediary")
-        val eNode = buildEdgeNode("edge")
-        iNode.connectIntermediaryToCloud(cNode)
-        eNode.connectEdgeToIntermediary(iNode)
+        if (simple) {
+            logger.info("Building simple topology")
+            val cNode = buildCloudNode()
+            val iNode = buildIntermediaryNode("intermediary")
+            val eNode = buildEdgeNode("edge")
+            iNode.connectIntermediaryToCloud(cNode)
+            eNode.connectEdgeToIntermediary(iNode)
+        } else {
+            logger.info("Building complex topology")
+            val cNode = buildCloudNode()
+            for (i in 1..3) {
+                val iNode = buildIntermediaryNode("intermediary-$i")
+                for (e in 1..5) {
+                    val eNode = buildEdgeNode("edge-$i-$e")
+                    eNode.connectEdgeToIntermediary(iNode)
+                }
+                iNode.connectEdgeToIntermediary(cNode)
+            }
+        }
     }
 
     /**
@@ -36,7 +50,7 @@ class Simulator(val config: Configuration) {
         for (x in 1..config.numberOfExecutables) defineExecutable(
             config.withVariance(1.0), // an executable has an average size of 1.0
             "executable$x",
-            config.withVariance(config.averageStoragePrice),
+            config.withVariancePrice(config.averageStoragePrice),
             config.avgExecLatency
         )
     }
@@ -57,7 +71,7 @@ class Simulator(val config: Configuration) {
             for (reqNo in 1..config.requestsPerEdgeNode) {
                 val timestamp = config.random.nextInt(config.simulationDuration)
                 val executable = executables.values.elementAt(config.random.nextInt(config.numberOfExecutables))
-                val price = config.withVariance(config.avgExecutionPrice)
+                val price = config.withVariancePrice(config.avgExecutionPrice)
                 reqs.add(Triple(timestamp, node, ExecRequest(executable, price, timestamp)))
                 //  counter++
             }
@@ -148,9 +162,9 @@ class Simulator(val config: Configuration) {
     fun ComputeNode.connectIntermediaryToCloud(cloud: ComputeNode) =
         this.connectTo(cloud, config.avgIntermediary2CloudLatency)
 
-    fun runSimulation(): SimulationResult {
+    fun runSimulation(simpleTopology: Boolean = true): SimulationResult {
         logger.info("Simulation configuration: $config")
-        defineTopology()
+        defineTopology(simpleTopology)
         edge.union(intermediary).union(cloud).forEach { logger.debug(it) }
         defineExecutables()
         logger.info("Added ${executables.size} executables")
