@@ -37,7 +37,7 @@ data class ComputeNode(
                 ?: throw RuntimeException("Insufficient capacity but min price element was null: $this")
 
             if (nodeType == NodeType.CLOUD) {
-                // we remove the cheaper one if we are a cloud node
+                // we remove the cheaper one if we are a cloud node // -> should be save to remove since cloud has infinite capacity
                 usedStorageCapacity -= exec.size
                 executables.remove(exec)
                 // println("$nodeType node $name dropped executable ${exec.name}. Capacity: $usedStorageCapacity out of $storageCapacity")
