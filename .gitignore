@@ -127,3 +127,6 @@ gradle-app.setting
 
 # Other
 .DS_Store
+
+# Result images
+*.pdf
