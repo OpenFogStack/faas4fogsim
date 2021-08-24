@@ -31,6 +31,7 @@ David Bermbach, Setareh Maghsudi, Jonathan Hasenburg, Tobias Pfandzelter. **Towa
 - Run MainKt and provide as argument:
     - `sim1`: study the effect of an increasing request load on the processing prices
     - `sim2`: study the effect of an increasing number of executables on storage prices
+    - `sim3`: study the effect of node disloyalty (in the paper stickiness, 100% disloyal = 0% sticky)
 - Parameter choices for sim1 and sim2 are detailed in `simResults/parameter_choices_paper_eval.txt`
 - The simulation is deterministic, the results and some analysis results for sim1 and sim2 are also available in `simResults`
 - You can customize simulation parameters in the CONFIG class
